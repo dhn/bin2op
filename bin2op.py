@@ -5,6 +5,7 @@
 Extract the opcode from the objdump of a binary
 '''
 
+import re
 import os
 import sys
 import getopt
@@ -42,7 +43,7 @@ def getopts():
                 sys.exit(1)
         elif opt in ("-s", "--short"):
             if objfile is not None:
-                print(shellcode)
+                print(re.sub("(.{64})", "\\1\n", shellcode, 0, re.DOTALL))
         elif opt in ("-l", "--large"):
             if objfile is not None:
                 for line in code:
