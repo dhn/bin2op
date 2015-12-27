@@ -15,7 +15,7 @@ Example: ./bin2op.py -a -f bindshell/build/bindshell.o -l
 ```
 
 ## Output - large
-```
+```asm
  "\x6a\x29"                      /* push   0x29 */
  "\x58"                          /* pop    rax */
  "\x99"                          /* cdq */
