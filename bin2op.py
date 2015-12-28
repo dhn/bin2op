@@ -12,7 +12,7 @@ import getopt
 import string
 from subprocess import check_output
 
-__version__ = "$Id: bin2op.py,v 1.1 2015/12/28 13:02:12 dhn Exp $"
+__version__ = "$Id: bin2op.py,v 1.2 2015/12/28 13:21:32 dhn Exp $"
 __license__ = "BSD"
 
 
@@ -44,7 +44,7 @@ def getopts():
         elif opt in ("-f", "--file"):
             objfile = arg
             if os.path.exists(objfile):
-                shellcode, code = parse(objfile, syntax)
+                shellcode, code = parse(objfile, syntax, formats)
             else:
                 print("[!] file does not exist")
                 sys.exit(1)
@@ -64,8 +64,13 @@ def getopts():
                     print(shellcode[:-1])
         elif opt in ("-l", "--large"):
             if objfile is not None:
+                # FIXME: this is really ugly :(
+                if formats is not None:
+                    print("shellcode = (")
                 for line in code:
                     print("", line)
+                if formats is not None:
+                    print(")")
         elif opt in ("-h", "--help"):
             usage()
         elif opt in ("-v", "--version"):
@@ -81,15 +86,15 @@ def usage():
     print("   -l, --large    Show verbose version of opcode")
     print("   -i, --intel    Use the intel assembly syntax")
     print("   -a, --att      Use the AT&T assembly syntax")
-    print("   -p, --python   Format short output to python syntax")
+    print("   -p, --python   Format output to python syntax")
     print("")
     print("Example: %s -a -f bindshell/build/bindshell.o -l" % __file__)
     print("         %s -f bindshell/build/bindshell.o -s" % __file__)
-    print("         %s -f bindshell/build/bindshell.o -p -s" % __file__)
+    print("         %s -p -f bindshell/build/bindshell.o -s" % __file__)
 
 
 # thanks zerosum0x0
-def parse(obj, syntax):
+def parse(obj, syntax, formats):
     objdump = ['objdump', '-d', '-M', syntax, obj]
 
     lines = check_output(objdump)
@@ -117,7 +122,10 @@ def parse(obj, syntax):
             shellcodeline += "\\x" + byte.decode("utf-8")
 
         shellcode += shellcodeline
-        c = '%-*s/* %s */' % (32, '"'+shellcodeline+'"', instruction)
+        if formats is not None:
+            c = '\t%-*s# %s' % (32, '"'+shellcodeline+'"', instruction)
+        else:
+            c = '%-*s/* %s */' % (32, '"'+shellcodeline+'"', instruction)
         code.append(c)
 
     return shellcode, code
