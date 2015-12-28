@@ -12,14 +12,18 @@ import getopt
 import string
 from subprocess import check_output
 
-__version__ = "$Id: bin2op.py,v 1.0 2015/12/27 15:47:42 dhn Exp $"
+__version__ = "$Id: bin2op.py,v 1.1 2015/12/28 13:02:12 dhn Exp $"
 __license__ = "BSD"
 
 
 def getopts():
     try:
-        usage = ["file=", "short", "large", "intel", "att", "version", "help"]
-        opts, args = getopt.getopt(sys.argv[1:], "f:sliavh", usage)
+        usage_opt = [
+                        "file=", "short", "large", "intel",
+                        "att", "python", "version", "help"
+                    ]
+
+        opts, args = getopt.getopt(sys.argv[1:], "f:sliapvh", usage_opt)
 
     except getopt.GetoptError as err:
         print(str(err))
@@ -29,11 +33,14 @@ def getopts():
     shellcode = None
     code = None
     syntax = "intel"
+    formats = None
     for opt, arg in opts:
         if opt in ("-i", "--intel"):
             syntax = "intel"
         elif opt in ("-a", "--att"):
             syntax = "att"
+        elif opt in ("-p", "--python"):
+            formats = "python"
         elif opt in ("-f", "--file"):
             objfile = arg
             if os.path.exists(objfile):
@@ -43,7 +50,18 @@ def getopts():
                 sys.exit(1)
         elif opt in ("-s", "--short"):
             if objfile is not None:
-                print(re.sub("(.{64})", "\\1\n", shellcode, 0, re.DOTALL))
+                if formats is not None:
+                    shellcode = re.sub(
+                                "(.{32})", "\tb\"\\1\"\n",
+                                shellcode, 0, re.DOTALL)
+                    print("shellcode = (")
+                    print(shellcode[:-1])
+                    print(")")
+                else:
+                    shellcode = re.sub(
+                                "(.{32})", "\\1\n",
+                                shellcode, 0, re.DOTALL)
+                    print(shellcode[:-1])
         elif opt in ("-l", "--large"):
             if objfile is not None:
                 for line in code:
@@ -63,9 +81,11 @@ def usage():
     print("   -l, --large    Show verbose version of opcode")
     print("   -i, --intel    Use the intel assembly syntax")
     print("   -a, --att      Use the AT&T assembly syntax")
+    print("   -p, --python   Format short output to python syntax")
     print("")
     print("Example: %s -a -f bindshell/build/bindshell.o -l" % __file__)
     print("         %s -f bindshell/build/bindshell.o -s" % __file__)
+    print("         %s -f bindshell/build/bindshell.o -p -s" % __file__)
 
 
 # thanks zerosum0x0
